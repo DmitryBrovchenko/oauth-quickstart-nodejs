@@ -103,6 +103,11 @@ app.get('/oauth-callback', async (req, res) => {
       return res.redirect(`/error?msg=${token.message}`);
     }
 
+    // Step 5
+    // Send the CTI URL to the app
+    console.log('===> Step 5: Updating the CTI config for the app');
+    await updateConfig();
+
     // Once the tokens have been retrieved, use them to make a query
     // to the HubSpot API
     res.redirect(`/`);
@@ -194,6 +199,33 @@ const displayContactName = (res, contact) => {
   const { firstname, lastname } = contact.properties;
   res.write(`<p>Contact name: ${firstname.value} ${lastname.value}</p>`);
 };
+
+//========================================//
+//   Updating CTI config                  //
+//========================================//
+
+const updateConfig = async () => {
+  console.log('');
+  console.log('=== Updating CTI config ===');
+  try {
+    const url = `https://api.hubapi.com/crm/v3/extensions/calling/${process.env.APP_ID}/settings?hapikey=${process.env.HUBSPOT_API_KEY}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    const body = {
+      name: process.env.CTI_NAME,
+      url: process.env.CTI_URL,
+      height: 600,
+      width: 400,
+      isReady: true
+    };
+    await request.post(url, { headers, body: JSON.stringify(body) });
+  } catch (e) {
+    console.error('  > Unable to update config', e);
+    return e;
+  }
+}
 
 app.get('/', async (req, res) => {
   res.setHeader('Content-Type', 'text/html');
